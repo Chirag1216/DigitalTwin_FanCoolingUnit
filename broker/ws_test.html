@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fan Twin WS Test</title>
+<style>
+  :root { --bg:#f6f7f9; --fg:#1b1f24; --muted:#5b6470; --card:#fff; --line:#d9dde3; --ok:#1f8a4c; --bad:#c23b2a; --accent:#2b6cb0; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#12151a; --fg:#e6e9ee; --muted:#9aa3ae; --card:#1b1f26; --line:#2c323b; --ok:#3fbf76; --bad:#ef6a57; --accent:#6aa7e8; } }
+  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.45 system-ui, sans-serif; }
+  main { max-width:900px; margin:0 auto; padding:20px 16px; display:grid; gap:14px; }
+  h1 { font-size:18px; margin:0; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px; display:grid; gap:10px; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  input { padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--fg); min-width:0; }
+  button { padding:6px 12px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--fg); cursor:pointer; }
+  button.on { border-color:var(--accent); color:var(--accent); font-weight:600; }
+  #state { font-weight:600; }
+  .ok { color:var(--ok); } .bad { color:var(--bad); }
+  .kv { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; }
+  .kv div { border:1px solid var(--line); border-radius:6px; padding:6px 8px; }
+  .kv b { display:block; font-size:18px; font-variant-numeric:tabular-nums; }
+  .kv span { color:var(--muted); font-size:12px; }
+  pre { margin:0; max-height:260px; overflow:auto; font-size:12px; color:var(--muted); white-space:pre-wrap; word-break:break-all; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Fan twin – broker WebSocket test</h1>
+
+  <div class="card">
+    <div class="row">
+      <input id="host" placeholder="PC IP" size="14">
+      <input id="user" value="web" size="6">
+      <input id="pass" type="password" placeholder="password" size="12">
+      <button id="connect">Connect</button>
+      <span id="state" class="bad">disconnected</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row" id="presets"></div>
+    <div class="kv">
+      <div><span>Fan</span><b id="online">–</b></div>
+      <div><span>Preset</span><b id="preset">–</b></div>
+      <div><span>RPM</span><b id="rpm">–</b></div>
+      <div><span>Vibration ax_std</span><b id="vib">–</b></div>
+      <div><span>DS18B20 °C</span><b id="temp">–</b></div>
+      <div><span>Msgs/s</span><b id="rate">–</b></div>
+    </div>
+  </div>
+
+  <div class="card"><pre id="log"></pre></div>
+</main>
+
+<script src="https://unpkg.com/mqtt@5.3.4/dist/mqtt.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const NAMES = ["OFF","LOW","MEDIUM","HIGH","MAX"];
+let client = null, count = 0, curPreset = null;
+
+$("host").value = location.hostname || "";
+NAMES.forEach((n, i) => {
+  const b = document.createElement("button");
+  b.textContent = `${i} ${n}`; b.id = "p" + i;
+  b.onclick = () => client && client.publish("fantwin/fan01/cmd", JSON.stringify({ preset: i }));
+  $("presets").appendChild(b);
+});
+
+function log(t) {
+  const el = $("log");
+  el.textContent = (new Date().toLocaleTimeString() + "  " + t + "\n" + el.textContent).slice(0, 8000);
+}
+function setState(t, ok) { $("state").textContent = t; $("state").className = ok ? "ok" : "bad"; }
+function markPreset(p) {
+  curPreset = p;
+  NAMES.forEach((_, i) => $("p" + i).classList.toggle("on", i === p));
+}
+
+$("connect").onclick = () => {
+  if (client) client.end(true);
+  const url = `ws://${$("host").value.trim()}:9001`;
+  client = mqtt.connect(url, { username: $("user").value, password: $("pass").value, reconnectPeriod: 3000 });
+  setState("connecting…", false);
+  client.on("connect", () => { setState("connected", true); client.subscribe("fantwin/#"); log("connected " + url); });
+  client.on("close", () => setState("disconnected", false));
+  client.on("error", e => { setState("error: " + e.message, false); log("error " + e.message); });
+  client.on("message", (topic, buf) => {
+    const s = buf.toString();
+    let m = null; try { m = JSON.parse(s); } catch {}
+    if (topic.endsWith("/telemetry") && m) {
+      count++;
+      $("rpm").textContent = m.rpm;
+      $("vib").textContent = m.ax_std?.toFixed(3);
+      $("temp").textContent = m.ds_temp_C ?? "–";
+      if (curPreset !== m.preset) markPreset(m.preset);
+    } else {
+      if (topic.endsWith("/status") && m) {
+        $("online").textContent = m.online ? "online" : "OFFLINE";
+        $("online").className = m.online ? "ok" : "bad";
+        if (m.online) { $("preset").textContent = m.name; markPreset(m.preset); }
+      }
+      log(topic + "  " + s);
+    }
+  });
+};
+setInterval(() => { $("rate").textContent = count; count = 0; }, 1000);
+</script>
+</body>
+</html>

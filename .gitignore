@@ -1,0 +1,20 @@
+# Local credentials - never commit
+firmware/fan_rpm/secrets.h
+
+# Broker runtime files (generated / contain password hashes)
+broker/passwd
+broker/passwd.tmp
+broker/mosquitto.conf
+broker/data/
+
+# Python / service runtime (Phase 3)
+__pycache__/
+*.pyc
+.venv/
+service/data/
+*.db
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store

@@ -1,0 +1,21 @@
+# Topic permissions. Anything not listed is denied.
+
+# ESP32 fan controller: publishes its own data, only reads commands.
+# (The LWT {"online":false} is published on its behalf, so it needs write on status.)
+user fan01
+topic write fantwin/fan01/telemetry
+topic write fantwin/fan01/status
+topic write fantwin/fan01/event
+topic read  fantwin/fan01/cmd
+
+# Python twin service (Phase 3): reads everything, publishes sim + alerts, may send commands.
+user twin
+topic read  fantwin/#
+topic write fantwin/+/sim
+topic write fantwin/+/alert
+topic write fantwin/+/cmd
+
+# Browser dashboard (Phase 4): reads everything, can only send commands.
+user web
+topic read  fantwin/#
+topic write fantwin/+/cmd

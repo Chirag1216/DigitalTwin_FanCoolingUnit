@@ -1,0 +1,27 @@
+# Fan digital twin - Mosquitto broker config (template).
+# start_broker.sh replaces @DIR@ with this folder's absolute path and writes
+# mosquitto.conf. Edit this .in file, not the generated one.
+
+allow_anonymous false
+password_file @DIR@/passwd
+acl_file @DIR@/acl
+
+# Keep retained messages (fan status) across broker restarts
+persistence true
+persistence_location @DIR@/data/
+autosave_interval 60
+
+log_dest stdout
+log_type error
+log_type warning
+log_type notice
+log_type information
+connection_messages true
+
+# Plain MQTT - ESP32 and the Python twin service
+listener 1883 0.0.0.0
+protocol mqtt
+
+# MQTT over WebSockets - the browser dashboard (Phase 4)
+listener 9001 0.0.0.0
+protocol websockets
