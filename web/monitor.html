@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fan Twin Monitor</title>
+<style>
+  :root { color-scheme: light; --bg:#f3f4f2; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --line:#e1e0d9;
+          --series:#2a78d6; --good:#0ca30c; --warn:#fab219; --crit:#d03b3b; }
+  @media (prefers-color-scheme: dark) {
+    :root { color-scheme: dark; --bg:#101010; --surface:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --line:#2c2c2a; --series:#3987e5; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.45 system-ui, sans-serif; }
+  main { max-width:1180px; margin:0 auto; padding:18px 16px 40px; display:grid; gap:14px; }
+  h1 { font-size:20px; margin:0; } h2 { font-size:15px; margin:0; }
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:14px; display:grid; gap:10px; align-content:start; min-width:0; }
+  .row { display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; }
+  .muted { color:var(--ink2); font-size:13px; }
+  input, button { font:inherit; padding:6px 10px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--ink); min-width:0; }
+  button { cursor:pointer; } button:disabled { opacity:.5; cursor:default; }
+  button.on { background:var(--series); border-color:var(--series); color:#fff; font-weight:600; }
+  :focus-visible { outline:2px solid var(--series); outline-offset:2px; }
+  .chip { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); border-radius:99px; padding:3px 11px; font-size:13px; }
+  .chip i { width:9px; height:9px; border-radius:50%; background:var(--ink2); }
+  .chip.good i { background:var(--good); } .chip.warn i { background:var(--warn); } .chip.crit i { background:var(--crit); }
+  .grid4 { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px; }
+  .grid3 { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:14px; }
+  .big { font-size:40px; font-weight:650; line-height:1.1; }
+  .big small { font-size:16px; font-weight:400; color:var(--ink2); margin-left:5px; }
+  .stale .live { opacity:.4; }
+  .chart { position:relative; }
+  .chart svg { display:block; width:100%; height:150px; overflow:visible; }
+  .chart text { fill:var(--ink2); font-size:11px; }
+  .tip { position:absolute; top:0; pointer-events:none; background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:3px 8px; font-size:12px; white-space:nowrap; }
+  table { width:100%; border-collapse:collapse; }
+  td { padding:6px 0; border-top:1px solid var(--line); vertical-align:top; }
+  td.v { text-align:right; font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap; padding-left:12px; }
+  td .code { display:block; font:11px ui-monospace, monospace; color:var(--ink2); }
+  ul { list-style:none; margin:0; padding:0; max-height:200px; overflow:auto; font-size:13px; }
+  li { padding:4px 0; border-top:1px solid var(--line); }
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <div class="row"><h1>Fan Twin Monitor</h1><span class="muted">live data from the ESP32 through your Mosquitto broker</span></div>
+    <form class="row" id="form">
+      <label>Broker PC <input id="host" size="16" value="localhost"></label>
+      <label>User <input id="user" size="7" value="web"></label>
+      <label>Password <input id="pass" type="password" size="14"></label>
+      <button type="submit">Connect</button>
+      <span class="chip" id="cBroker"><i></i><span>Broker: not connected</span></span>
+      <span class="chip" id="cEsp"><i></i><span>ESP32: unknown</span></span>
+      <span class="chip" id="cSettled"><i></i><span>Fan state: —</span></span>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="row"><h2>Fan speed control</h2><div class="row" id="presets"></div></div>
+    <div class="muted">If the twin service is running in AUTO mode it will override your choice. Use <code>--manual</code> to control from here.</div>
+  </div>
+
+  <div id="liveArea" class="stale" style="display:grid;gap:14px">
+    <div class="grid4">
+      <div class="card"><span class="muted">Fan speed</span><div class="big live"><span id="hRpm">—</span><small>RPM</small></div><span class="muted" id="hRpmNote">tach reads 0 as soon as the fan is switched OFF, while it is still coasting</span></div>
+      <div class="card"><span class="muted">Enclosure temperature</span><div class="big live"><span id="hTemp">—</span><small>°C</small></div><span class="muted">DS18B20 probe</span></div>
+      <div class="card"><span class="muted">Vibration (X axis)</span><div class="big live"><span id="hVib">—</span><small>m/s²</small></div><span class="muted" id="hVibNote">alert limit depends on speed</span></div>
+      <div class="card"><span class="muted">Fan setting</span><div class="big live"><span id="hPreset">—</span></div><span class="muted" id="hDuty">PWM duty —</span></div>
+    </div>
+
+    <div class="grid3">
+      <div class="card"><h2>Fan speed (RPM), last 2 minutes</h2><div class="chart" id="chRpm"></div></div>
+      <div class="card"><h2>Enclosure temperature (°C)</h2><div class="chart" id="chTemp"></div></div>
+      <div class="card"><h2>Vibration, X axis (m/s²)</h2><div class="chart" id="chVib"></div></div>
+    </div>
+
+    <div class="grid3">
+      <div class="card"><h2>Fan</h2><table id="tFan"></table></div>
+      <div class="card"><h2>Temperature</h2><table id="tTemp"></table></div>
+      <div class="card"><h2>Power (INA219)</h2><div class="muted" id="inaNote"></div><table id="tPower"></table></div>
+      <div class="card"><h2>Vibration (accelerometer)</h2><div class="muted">Std dev = how much it shakes. Mean = average pull, where Z includes gravity (about 9.8).</div><table id="tAccel"></table></div>
+      <div class="card"><h2>Rotation (gyroscope)</h2><div class="muted">How fast the board itself is turning. Near zero when mounted still.</div><table id="tGyro"></table></div>
+      <div class="card"><h2>Data health</h2><table id="tSys"></table></div>
+    </div>
+  </div>
+
+  <div class="grid3">
+    <div class="card"><h2>Digital twin (Python service)</h2><div class="muted" id="simNote">Nothing yet. Run <code>python main.py --manual</code> in the service folder.</div><table id="tSim"></table></div>
+    <div class="card"><h2>Alerts</h2><ul id="alerts"><li class="muted">No alerts received.</li></ul></div>
+    <div class="card"><h2>Messages from the ESP32</h2><ul id="events"><li class="muted">Nothing yet.</li></ul></div>
+  </div>
+</main>
+
+<script src="https://unpkg.com/mqtt@5.3.4/dist/mqtt.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const VIB_LIMITS = [0.25, 0.30, 0.75, 0.85, 1.50];  // keep in step with service/config.py
+const NAMES = ["OFF","LOW","MEDIUM","HIGH","MAX"], BASE = "fantwin/fan01/";
+const isNum = v => typeof v === "number" && isFinite(v);
+const fmt = (v, d) => isNum(v) ? v.toFixed(d) : "—";
+const age = ms => isNum(ms) ? (ms / 1000).toFixed(1) : "—";
+
+// [field, plain name, unit, decimals or formatter]
+const GROUPS = {
+  tFan: [["preset","Preset number","0–4",0],["duty_pct","PWM duty (power sent to fan)","%",0],["rpm","Measured speed","RPM",0],
+         ["settled","Speed settled (12 s after a change)","",v => v === 1 ? "yes" : v === 0 ? "not yet" : "—"]],
+  tTemp: [["ds_temp_C","Enclosure air (DS18B20)","°C",2],["temp_C","Motion sensor chip (MPU6050)","°C",2],["ds_age_ms","Age of probe reading","s",age]],
+  tPower: [["bus_V","Supply voltage","V",2],["load_V","Voltage including shunt","V",2],["current_mA","Fan current","mA",1],["shunt_mV","Shunt voltage","mV",3],["ina_age_ms","Age of power reading","s",age]],
+  tAccel: [["ax_std","Shake, X (std dev)","m/s²",4],["ay_std","Shake, Y (std dev)","m/s²",4],["az_std","Shake, Z (std dev)","m/s²",4],
+           ["ax_p2p","Largest swing, X","m/s²",4],["ay_p2p","Largest swing, Y","m/s²",4],["az_p2p","Largest swing, Z","m/s²",4],
+           ["ax_mean","Average, X","m/s²",3],["ay_mean","Average, Y","m/s²",3],["az_mean","Average, Z","m/s²",3]],
+  tGyro: [["gx_mean","Average turn rate, X","rad/s",4],["gy_mean","Average turn rate, Y","rad/s",4],["gz_mean","Average turn rate, Z","rad/s",4],
+          ["gx_std","Variation, X","rad/s",4],["gy_std","Variation, Y","rad/s",4],["gz_std","Variation, Z","rad/s",4]],
+  tSys: [["t_ms","ESP32 running time","s",v => isNum(v) ? (v / 1000).toFixed(0) : "—"],["n","Motion samples per reading (about 250)","",0]],
+};
+const SIM = [["sim_rpm","Speed the model expects","RPM",0],["sim_current_mA","Current the model expects (estimate)","mA",1],
+  ["ctrl_temp_C","Temperature used by controller","°C",2],["ctrl_mode","Controller mode","",v => v ?? "—"],
+  ["ctrl_target","Preset the controller wants","",v => isNum(v) ? v + " " + (NAMES[v] || "") : "—"],
+  ["ctrl_action","Controller action","",v => v ?? "—"],["sim_temp","Temperature is simulated","",v => v ? "yes (demo)" : "no"]];
+
+const cells = {};
+function buildTable(id, rows) {
+  rows.forEach(([key, name, unit, f]) => {
+    const tr = $(id).insertRow(), a = tr.insertCell(), b = tr.insertCell();
+    a.textContent = name;
+    const code = document.createElement("span"); code.className = "code"; code.textContent = key + (unit ? "  ·  " + unit : "");
+    a.appendChild(code); b.className = "v live"; b.textContent = "—";
+    cells[id + key] = { el: b, unit, f };
+  });
+}
+function fillTable(id, rows, data) {
+  rows.forEach(([key]) => {
+    const c = cells[id + key], v = data[key];
+    const text = typeof c.f === "function" ? c.f(v) : fmt(v, c.f);
+    c.el.textContent = text + (text !== "—" && c.unit && c.unit !== "0–4" ? " " + c.unit : "");
+  });
+}
+Object.entries(GROUPS).forEach(([id, rows]) => buildTable(id, rows));
+buildTable("tSim", SIM);
+
+function chip(id, text, state) { $(id).className = "chip " + (state || ""); $(id).lastElementChild.textContent = text; }
+function addItem(listId, text) {
+  const ul = $(listId);
+  if (ul.firstElementChild?.classList.contains("muted")) ul.textContent = "";
+  const li = document.createElement("li"); li.textContent = new Date().toLocaleTimeString() + "  " + text;
+  ul.prepend(li); while (ul.children.length > 30) ul.lastElementChild.remove();
+}
+
+// ---------- line charts (one series each) ----------
+const history = [];  // {t, rpm, temp, vib}
+function makeChart(id, key, dec, range) {
+  const box = $(id); let hoverX = null;
+  box.addEventListener("pointermove", e => { hoverX = e.clientX - box.getBoundingClientRect().left; draw(); });
+  box.addEventListener("pointerleave", () => { hoverX = null; draw(); });
+  function draw() {
+    const W = box.clientWidth || 320, H = 150, L = 44, R = 8, T = 8, B = 20;
+    const now = history.length ? history[history.length - 1].t : Date.now();
+    const pts = history.filter(p => isNum(p[key]));
+    const [lo, hi] = range(pts.map(p => p[key]));
+    const x = t => L + (W - L - R) * Math.max(0, 1 - (now - t) / 120000);
+    const y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${key} over the last two minutes">`;
+    [lo, (lo + hi) / 2, hi].forEach(v => s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${v.toFixed(dec)}</text>`);
+    s += `<text x="${L}" y="${H - 4}">2 min ago</text><text x="${W - R}" y="${H - 4}" text-anchor="end">now</text>`;
+    // break the line wherever data is missing for more than 2 s
+    let d = "", prev = null;
+    pts.forEach(p => { d += (prev === null || p.t - prev > 2000 ? "M" : "L") + x(p.t).toFixed(1) + " " + y(p[key]).toFixed(1); prev = p.t; });
+    s += `<path d="${d}" fill="none" stroke="var(--series)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    let tip = "";
+    if (hoverX !== null && pts.length) {
+      const p = pts.reduce((a, b) => Math.abs(x(b.t) - hoverX) < Math.abs(x(a.t) - hoverX) ? b : a);
+      s += `<line x1="${x(p.t)}" x2="${x(p.t)}" y1="${T}" y2="${H - B}" stroke="var(--ink2)"/><circle cx="${x(p.t)}" cy="${y(p[key])}" r="4" fill="var(--series)" stroke="var(--surface)" stroke-width="2"/>`;
+      tip = `<div class="tip" style="${x(p.t) > W / 2 ? "right:" + (W - x(p.t) + 8) : "left:" + (x(p.t) + 8)}px"><b>${p[key].toFixed(key === "vib" ? 4 : key === "temp" ? 2 : 0)}</b> · ${Math.round((now - p.t) / 1000)} s ago</div>`;
+    }
+    box.innerHTML = s + "</svg>" + tip;
+  }
+  return draw;
+}
+const charts = [
+  makeChart("chRpm", "rpm", 0, v => [0, Math.max(3000, ...v)]),
+  makeChart("chTemp", "temp", 1, v => { if (!v.length) return [20, 40]; const a = Math.min(...v), b = Math.max(...v), m = (a + b) / 2, h = Math.max(1, (b - a) / 2 + .3); return [m - h, m + h]; }),
+  makeChart("chVib", "vib", 2, v => [0, Math.max(0.1, ...v) * 1.1]),
+];
+const redraw = () => charts.forEach(c => c());
+redraw(); addEventListener("resize", redraw);
+
+// ---------- MQTT ----------
+let client = null, lastRx = 0, espOnline = null;
+
+NAMES.forEach((n, i) => {
+  const b = document.createElement("button");
+  b.type = "button"; b.id = "p" + i; b.textContent = `${i}  ${n}`; b.disabled = true;
+  b.onclick = () => client?.publish(BASE + "cmd", JSON.stringify({ preset: i }), { qos: 1 });
+  $("presets").appendChild(b);
+});
+const enableButtons = on => NAMES.forEach((_, i) => $("p" + i).disabled = !on);
+
+function onTelemetry(m) {
+  lastRx = Date.now(); espOnline = true;
+  $("hRpm").textContent = fmt(m.rpm, 0);
+  $("hTemp").textContent = fmt(m.ds_temp_C, 2);
+  $("hVib").textContent = fmt(m.ax_std, 3);
+  const limit = m.settled ? VIB_LIMITS[m.preset] ?? 1.5 : 1.5;
+  $("hVibNote").textContent = (isNum(m.ax_std) && m.ax_std > limit ? "⚠ above" : "alert above") + ` ${limit} at this speed`;
+  $("hPreset").textContent = NAMES[m.preset] ?? "—";
+  $("hDuty").textContent = "PWM duty " + fmt(m.duty_pct, 0) + " %";
+  NAMES.forEach((_, i) => $("p" + i).classList.toggle("on", i === m.preset));
+  chip("cSettled", m.settled ? "Fan state: settled" : "Fan state: changing speed", m.settled ? "good" : "warn");
+  // without an INA219 the firmware still reports an ever-growing age, so blank it
+  if (!isNum(m.current_mA)) m = { ...m, ina_age_ms: null };
+  Object.entries(GROUPS).forEach(([id, rows]) => fillTable(id, rows, m));
+  $("inaNote").textContent = isNum(m.current_mA) ? "" : "Not connected, so these stay empty.";
+  history.push({ t: lastRx, rpm: m.rpm, temp: m.ds_temp_C, vib: m.ax_std });
+  while (history.length && lastRx - history[0].t > 120000) history.shift();
+  redraw();
+}
+
+function connect() {
+  client?.end(true);
+  let host = $("host").value.trim() || "localhost";
+  if (!host.includes(":")) host += ":9001";
+  const opts = { reconnectPeriod: 3000 };
+  if ($("user").value) { opts.username = $("user").value; opts.password = $("pass").value; }
+  if (typeof mqtt === "undefined") { chip("cBroker", "Broker: library not loaded (needs internet)", "crit"); return; }
+  chip("cBroker", "Broker: connecting…", "warn");
+  client = mqtt.connect("ws://" + host, opts);
+  client.on("connect", () => { chip("cBroker", "Broker: connected", "good"); enableButtons(true); client.subscribe(BASE + "#"); });
+  client.on("close", () => { enableButtons(false); if (!$("cBroker").textContent.includes("refused")) chip("cBroker", "Broker: not connected", "crit"); });
+  client.on("error", e => {
+    if (/authori|password/i.test(e.message)) { chip("cBroker", "Broker: login refused, check password", "crit"); client.end(true); }
+    else chip("cBroker", "Broker: " + e.message, "crit");
+  });
+  client.on("message", (topic, buf) => {
+    let m; try { m = JSON.parse(buf.toString()); } catch { return; }
+    if (!m || typeof m !== "object") return;
+    const kind = topic.slice(BASE.length);
+    if (kind === "telemetry") onTelemetry(m);
+    else if (kind === "status") { espOnline = !!m.online; addItem("events", m.online ? `online, preset ${m.name}` : "ESP32 went offline"); }
+    else if (kind === "event") addItem("events", m.msg ?? JSON.stringify(m));
+    else if (kind === "sim") { fillTable("tSim", SIM, m); $("simNote").textContent = "Receiving from the twin service."; }
+    else if (kind === "alert") addItem("alerts", `${(m.severity || "info").toUpperCase()}: ${m.msg || m.type}`);
+  });
+}
+$("form").addEventListener("submit", e => { e.preventDefault(); connect(); });
+
+setInterval(() => {
+  const fresh = Date.now() - lastRx < 3000;
+  $("liveArea").classList.toggle("stale", !fresh);
+  if (fresh) chip("cEsp", "ESP32: live", "good");
+  else if (espOnline === false) chip("cEsp", "ESP32: offline", "crit");
+  else chip("cEsp", lastRx ? "ESP32: no new data" : "ESP32: waiting", "warn");
+}, 500);
+
+const q = new URLSearchParams(location.search);
+if (q.has("host")) $("host").value = q.get("host");
+if (q.has("user")) $("user").value = q.get("user");
+if (q.has("auto")) connect();
+</script>
+</body>
+</html>

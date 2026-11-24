@@ -17,7 +17,7 @@ ESP32 (firmware/) ──MQTT 1883──► Mosquitto (broker/) ◄──WebSocke
 |---|---|---|
 | `firmware/fan_rpm/` | ESP32 Arduino sketch: PWM presets, tach RPM, IMU vibration stats, DS18B20, INA219, MQTT link | Phase 1 ✅ |
 | `broker/` | Mosquitto config with auth, topic ACL, WebSockets, persistence + a WebSocket test page | Phase 2 ✅ |
-| `service/` | Python logger, simulated model, anomaly detection | Phase 3 (planned) |
+| `service/` | Python logger, simulated model, closed-loop thermal control, anomaly detection, Rich TUI | Phase 3 ✅ |
 | `web/` | Three.js 3D digital twin dashboard | Phase 4 (planned) |
 | `3d-model/` | Blender glTF models of the fan and full assembly (`Fan_Rotor` is a separate mesh) | ✅ |
 
@@ -56,3 +56,31 @@ Fan presets (validated operating points): `OFF 0% · LOW 30% · MEDIUM 50% · HI
    **OneWire**, **DallasTemperature**; board *ESP32 Dev Module*; upload `fan_rpm.ino`.
    Serial monitor 115200: `p 0`…`p 4` changes preset.
 3. **Test**: open `broker/ws_test.html` in a browser, enter the PC IP + `web` password → live RPM and preset buttons.
+   **Live monitor:** open `web/monitor.html` in a browser (needs internet for the MQTT library),
+   enter the broker PC (`localhost` on the same PC) and the `web` password. Every telemetry field
+   is shown with its name and unit, plus 2-minute charts, fan buttons, and twin data/alerts.
+4. **Twin Service** (Phase 3):
+   ```bash
+   cd service
+   python3 -m venv .venv && source .venv/bin/activate
+   pip install -r requirements.txt
+
+   # The twin password can be given with --password, via $FANTWIN_TWIN_PASS, or typed at the prompt.
+   export FANTWIN_TWIN_PASS='<twin_password>'
+
+   # (Recommended) One-time thermal profiling (~10 min) -> thermal_profile.json:
+   python main.py --calibrate            # shorten with --cal-settle 30 --cal-sample 30
+
+   # Live twin: closed-loop fan control + Rich TUI
+   python main.py                        # add --manual to start without auto control
+
+   # DEMO mode: simulated heating/cooling ramp drives the real fan
+   python main.py --sim-temp             # tune with --sim-temp-rate / -start / -max
+
+   # Tests
+   python -m unittest test_suite -v
+   ```
+   Keys: `m` toggle AUTO/MANUAL · `0`–`4` set preset (MANUAL) · `q` quit.
+   Each run writes `service/logs/session_<time>.csv` (telemetry + model + controller decisions;
+   `ds_temp_C` is always the real sensor, `ctrl_temp_C` what the controller used) and a matching `.log`.
+   Twin publishes `fantwin/fan01/sim` (model + controller state) and `fantwin/fan01/alert` (anomalies).

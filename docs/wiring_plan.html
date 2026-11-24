@@ -1,0 +1,378 @@
+<title>Fan Twin Wiring Plan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one bench-reference column — rules, schematic, then a tick-off build list */
+:root {
+  --bg: #f4f6f7; --surface: #ffffff; --fg: #1a2127; --muted: #5a6670; --line: #d3dade;
+  --accent: #0c6f73;
+  --v33: #c8372b; --gnd: #1a2127; --v12: #c27a00; --sig: #2a62c9;
+  --warn-bg: #fff4e0; --warn-fg: #7a4a00; --ok: #1f7a43;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111619; --surface: #192025; --fg: #e3e8ec; --muted: #94a1ab; --line: #2b353c;
+  --accent: #46b8b2; --v33: #ff6f61; --gnd: #c5cfd6; --v12: #f2ad36; --sig: #74a5ff;
+  --warn-bg: #2e2412; --warn-fg: #f5c97a; --ok: #5fcf8c; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #111619; --surface: #192025; --fg: #e3e8ec; --muted: #94a1ab; --line: #2b353c;
+  --accent: #46b8b2; --v33: #ff6f61; --gnd: #c5cfd6; --v12: #f2ad36; --sig: #74a5ff;
+  --warn-bg: #2e2412; --warn-fg: #f5c97a; --ok: #5fcf8c; color-scheme: dark }
+
+body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1080px; margin: 0 auto; padding-block: 32px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 36px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.25rem; font-weight: 600; }
+h3 { font-size: 1rem; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+code, .mono { font-family: var(--mono); font-size: 0.9em; }
+.eyebrow { font: 600 0.72rem/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+header { display: grid; gap: 10px; }
+header .sub { color: var(--muted); }
+section { display: grid; gap: 14px; min-width: 0; }
+
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.rule { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: grid; gap: 4px; }
+.rule b { font-weight: 600; }
+.rule span { color: var(--muted); font-size: 0.92rem; }
+.rule .tag { font: 600 0.7rem/1 var(--mono); letter-spacing: 0.08em; }
+.tag.r33 { color: var(--v33); } .tag.rg { color: var(--fg); } .tag.r12 { color: var(--v12); }
+
+figure { margin: 0; display: grid; gap: 10px; min-width: 0; }
+.board { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
+.board svg { display: block; width: 100%; min-width: 880px; height: auto; color: var(--fg); }
+figcaption { color: var(--muted); font-size: 0.9rem; max-width: 80ch; }
+svg text { font-family: var(--mono); font-size: 12px; fill: currentColor; }
+svg .title { font-family: var(--sans); font-weight: 700; font-size: 15px; }
+svg .small { font-size: 11px; fill: var(--muted); }
+svg .box { fill: var(--surface); stroke: currentColor; stroke-width: 1.5; }
+svg .box.soft { stroke: var(--muted); stroke-dasharray: 5 4; }
+svg .w { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+svg .w33 { stroke: var(--v33); } svg .wg { stroke: var(--gnd); } svg .w12 { stroke: var(--v12); } svg .ws { stroke: var(--sig); }
+svg .rail { stroke-width: 5; }
+svg .dot33 { fill: var(--v33); } svg .dotg { fill: var(--gnd); } svg .dots { fill: var(--sig); } svg .dot12 { fill: var(--v12); }
+svg .pin { fill: currentColor; }
+svg .part { fill: var(--surface); stroke: currentColor; stroke-width: 1.5; }
+svg .plate { stroke: currentColor; stroke-width: 3; }
+svg .r33t { fill: var(--v33); font-weight: 600; } svg .rgt { fill: var(--gnd); font-weight: 600; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 0.88rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.sw { width: 26px; height: 0; border-top: 3px solid; display: inline-block; }
+.sw.s33 { border-color: var(--v33); } .sw.sg { border-color: var(--gnd); } .sw.s12 { border-color: var(--v12); } .sw.ss { border-color: var(--sig); }
+
+.build { display: grid; gap: 22px; }
+.group { display: grid; gap: 8px; }
+.group h3 { display: flex; align-items: baseline; gap: 10px; }
+.group h3 small { font: 400 0.82rem var(--sans); color: var(--muted); }
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { font: 600 0.72rem/1.2 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); background: var(--bg); }
+td.n { width: 36px; }
+td .mono { white-space: nowrap; }
+td.note { color: var(--muted); }
+tr.done td:not(.n) { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line); }
+input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+input[type="checkbox"]:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wire { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.wire i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; border: 1px solid var(--line); }
+.progress { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; color: var(--muted); font-size: 0.9rem; }
+.progress b { color: var(--fg); font-variant-numeric: tabular-nums; }
+button { font: 500 0.85rem var(--sans); color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+
+.callout { background: var(--warn-bg); color: var(--warn-fg); border-radius: 8px; padding: 12px 16px; font-size: 0.92rem; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+.two > div { display: grid; gap: 10px; align-content: start; min-width: 0; }
+ul.checks { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+pre { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; overflow-x: auto; font: 12.5px/1.6 var(--mono); }
+pre .ok { color: var(--ok); } pre .dim { color: var(--muted); }
+.foot { color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--line); padding-top: 16px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Fan cooling unit · digital twin hardware</div>
+    <h1>Fan Twin Wiring Plan</h1>
+    <p class="sub">ESP32 DevKitC driving an Arctic P12 Pro fan, with an MPU6050 for vibration and a DS18B20 for enclosure temperature. Pins match <code>firmware/fan_rpm/config.h</code>. The INA219 is optional and currently removed.</p>
+  </header>
+
+  <section aria-label="Rules">
+    <div class="rules">
+      <div class="rule"><span class="tag rg">GND</span><b>Every ground is joined</b><span>The ESP32, the 12 V supply's minus and every module share one GND rail. Without it the PWM and tach signals have no reference.</span></div>
+      <div class="rule"><span class="tag r12">12 V</span><b>12 V only touches the fan</b><span>The supply's plus goes to the fan's yellow wire and nowhere else. One slip onto an ESP32 pin destroys it.</span></div>
+      <div class="rule"><span class="tag r33">3V3</span><b>Sensors and pull-ups use 3V3</b><span>MPU6050, DS18B20 and every pull-up resistor connect to the ESP32's 3V3 pin. Never 5 V, never 12 V.</span></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-diagram">
+    <h2 id="h-diagram">Wiring diagram</h2>
+    <figure>
+      <div class="board">
+        <svg viewBox="0 0 1120 660" role="img" aria-label="Wiring diagram: ESP32 3V3 and GND feed two rails. Fan PWM goes to GPIO26, fan tach goes through a 10 kilohm pull-up and 10 kilohm and 10 nanofarad filter to GPIO25. MPU6050 SCL to GPIO22, SDA to GPIO21. DS18B20 data to GPIO4 with a 4.7 kilohm pull-up. The 12 volt supply powers only the fan and shares ground.">
+          <!-- rails -->
+          <line class="w w33 rail" x1="280" y1="56" x2="1100" y2="56"/>
+          <text x="600" y="46" class="r33t">3V3 RAIL</text>
+          <line class="w wg rail" x1="18" y1="624" x2="1100" y2="624"/>
+          <text x="480" y="650" class="rgt">GND RAIL · ESP32, 12 V supply and all modules share it</text>
+
+          <!-- 12 V supply -->
+          <rect class="box" x="30" y="90" width="170" height="80" rx="6"/>
+          <text x="125" y="120" text-anchor="middle" class="title">12 V DC supply</text>
+          <text x="125" y="138" text-anchor="middle" class="small">fan power only</text>
+          <text x="40" y="134">−</text>
+          <text x="70" y="162" text-anchor="middle">+</text>
+          <path class="w w12" d="M70 170 V290 H90"/>
+          <path class="w wg" d="M30 130 H18 V624"/>
+          <circle class="dotg" cx="18" cy="624" r="5"/>
+
+          <!-- fan -->
+          <rect class="box" x="90" y="250" width="180" height="180" rx="8"/>
+          <text x="180" y="330" text-anchor="middle" class="title">Arctic P12 Pro</text>
+          <text x="180" y="348" text-anchor="middle" class="small">120 mm 4-pin PWM fan</text>
+          <text x="98" y="294">+12V yellow</text>
+          <text x="98" y="394">GND black</text>
+          <text x="262" y="294" text-anchor="end">TACH green</text>
+          <text x="262" y="394" text-anchor="end">PWM blue</text>
+          <path class="w wg" d="M90 390 H50 V624"/>
+          <circle class="dotg" cx="50" cy="624" r="5"/>
+
+          <!-- tach filter: pull-up, series R, cap -->
+          <path class="w ws" d="M270 290 H330"/>
+          <path class="w w33" d="M310 290 V56"/>
+          <rect class="part" x="303" y="150" width="14" height="56" rx="2"/>
+          <text x="324" y="182">10 kΩ</text>
+          <circle class="dots" cx="310" cy="290" r="5"/>
+          <circle class="dot33" cx="310" cy="56" r="5"/>
+          <rect class="part" x="330" y="283" width="50" height="14" rx="2"/>
+          <text x="355" y="274" text-anchor="middle">10 kΩ</text>
+          <path class="w ws" d="M380 290 H410 V330 H470"/>
+          <circle class="dots" cx="410" cy="330" r="5"/>
+          <path class="w ws" d="M410 330 V446"/>
+          <line class="plate" x1="396" y1="446" x2="424" y2="446"/>
+          <line class="plate" x1="396" y1="455" x2="424" y2="455"/>
+          <text x="430" y="455">10 nF</text>
+          <path class="w wg" d="M410 455 V624"/>
+          <circle class="dotg" cx="410" cy="624" r="5"/>
+
+          <!-- PWM, hops over the cap lead -->
+          <path class="w ws" d="M270 390 H295 V354 H404 a6 6 0 0 1 12 0 H470"/>
+
+          <!-- ESP32 -->
+          <rect class="box" x="470" y="110" width="180" height="400" rx="10"/>
+          <text x="560" y="240" text-anchor="middle" class="title">ESP32</text>
+          <text x="560" y="258" text-anchor="middle" class="small">DevKitC · USB at bottom</text>
+          <rect class="part" x="536" y="498" width="48" height="22" rx="3"/>
+          <text x="560" y="538" text-anchor="middle" class="small">USB to PC</text>
+          <text x="480" y="154">3V3</text>
+          <text x="480" y="334">GPIO25 · TACH</text>
+          <text x="480" y="358">GPIO26 · PWM</text>
+          <text x="480" y="442">GND</text>
+          <text x="640" y="198" text-anchor="end">GPIO22 · SCL</text>
+          <text x="640" y="264" text-anchor="end">GPIO21 · SDA</text>
+          <text x="640" y="418" text-anchor="end">GPIO4 · 1-Wire</text>
+          <path class="w w33" d="M470 150 H440 V56"/>
+          <circle class="dot33" cx="440" cy="56" r="5"/>
+          <path class="w wg" d="M470 438 H450 V624"/>
+          <circle class="dotg" cx="450" cy="624" r="5"/>
+          <g class="pin">
+            <circle cx="470" cy="150" r="3.5"/><circle cx="470" cy="330" r="3.5"/><circle cx="470" cy="354" r="3.5"/><circle cx="470" cy="438" r="3.5"/>
+            <circle cx="650" cy="194" r="3.5"/><circle cx="650" cy="260" r="3.5"/><circle cx="650" cy="414" r="3.5"/>
+          </g>
+
+          <!-- I2C -->
+          <path class="w ws" d="M650 194 H800"/>
+          <path class="w ws" d="M650 260 H800"/>
+
+          <!-- MPU6050 -->
+          <rect class="box" x="800" y="150" width="190" height="150" rx="6"/>
+          <text x="895" y="222" text-anchor="middle" class="title">MPU6050</text>
+          <text x="895" y="240" text-anchor="middle" class="small">GY-521 · I²C 0x68</text>
+          <text x="840" y="170" text-anchor="middle">VCC</text>
+          <text x="810" y="198">SCL</text>
+          <text x="810" y="264">SDA</text>
+          <text x="980" y="194" text-anchor="end">GND</text>
+          <text x="980" y="274" text-anchor="end">AD0</text>
+          <path class="w w33" d="M840 150 V56"/>
+          <circle class="dot33" cx="840" cy="56" r="5"/>
+          <path class="w wg" d="M990 190 H1040 V624"/>
+          <path class="w wg" d="M990 270 H1040"/>
+          <circle class="dotg" cx="1040" cy="270" r="5"/>
+          <circle class="dotg" cx="1040" cy="624" r="5"/>
+
+          <!-- DS18B20 -->
+          <rect class="box" x="800" y="370" width="190" height="100" rx="6"/>
+          <text x="925" y="408" text-anchor="middle" class="title">DS18B20</text>
+          <text x="925" y="426" text-anchor="middle" class="small">temperature probe</text>
+          <text x="850" y="388" text-anchor="middle">VDD red</text>
+          <text x="810" y="418" class="small" style="fill:currentColor">DQ yellow</text>
+          <text x="980" y="458" text-anchor="end">GND black</text>
+          <path class="w ws" d="M650 414 H800"/>
+          <circle class="dots" cx="730" cy="414" r="5"/>
+          <path class="w ws" d="M730 414 V398"/>
+          <rect class="part" x="723" y="352" width="14" height="46" rx="2"/>
+          <text x="744" y="382">4.7 kΩ</text>
+          <path class="w w33" d="M730 352 V340 H850"/>
+          <path class="w w33" d="M850 370 V340 H1034 a6 6 0 0 1 12 0 H1075 V56"/>
+          <circle class="dot33" cx="850" cy="340" r="5"/>
+          <circle class="dot33" cx="1075" cy="56" r="5"/>
+          <path class="w wg" d="M990 454 H1040"/>
+          <circle class="dotg" cx="1040" cy="454" r="5"/>
+        </svg>
+      </div>
+      <figcaption>Each sensor takes 3V3 from the top rail and GND from the bottom rail. The tach wire passes through a pull-up and an RC filter before GPIO25, and the DS18B20 data line needs its 4.7 kΩ pull-up to 3V3. Pins on the ESP32 are drawn in the order they appear on a 38-pin DevKitC. Always go by the labels printed on your own board.</figcaption>
+      <div class="legend">
+        <span><i class="sw s33"></i>3V3</span>
+        <span><i class="sw sg"></i>GND</span>
+        <span><i class="sw s12"></i>12 V</span>
+        <span><i class="sw ss"></i>signal</span>
+        <span>● joined</span>
+        <span>⌒ wires cross, not connected</span>
+      </div>
+    </figure>
+  </section>
+
+  <section aria-labelledby="h-build">
+    <h2 id="h-build">Build order</h2>
+    <p>Wire with everything unplugged, top to bottom. Tick each wire as you place it; your ticks stay in this browser.</p>
+    <div class="progress"><span><b id="count">0</b> of <b id="total">0</b> connections done</span><button type="button" id="reset">Clear ticks</button></div>
+
+    <div class="build" id="build">
+      <div class="group">
+        <h3>1 · Power and ground <small>do these first</small></h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th></th><th>From</th><th>To</th><th>Wire</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td class="n"><input type="checkbox" id="c-esp33"></td><td><span class="mono">ESP32 3V3</span></td><td>3V3 rail</td><td><span class="wire"><i style="background:var(--v33)"></i>red</span></td><td class="note">The only source of 3V3 for everything.</td></tr>
+            <tr><td class="n"><input type="checkbox" id="c-espgnd"></td><td><span class="mono">ESP32 GND</span></td><td>GND rail</td><td><span class="wire"><i style="background:#222"></i>black</span></td><td class="note">Any GND pin on the board works.</td></tr>
+            <tr><td class="n"><input type="checkbox" id="c-psugnd"></td><td>12 V supply −</td><td>GND rail</td><td><span class="wire"><i style="background:#222"></i>black</span></td><td class="note">Common ground. Easy to forget, and the fan won't respond without it.</td></tr>
+            <tr><td class="n"><input type="checkbox" id="c-psu12"></td><td>12 V supply +</td><td>Fan yellow (+12V)</td><td><span class="wire"><i style="background:#e8c21b"></i>yellow</span></td><td class="note">Nothing else connects to this wire.</td></tr>
+            <tr><td class="n"><input type="checkbox" id="c-fangnd"></td><td>Fan black (GND)</td><td>GND rail</td><td><span class="wire"><i style="background:#222"></i>black</span></td><td class="note"></td></tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <div class="group">
+        <h3>2 · Fan signals</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th></th><th>From</th><th>To</th><th>Part / wire</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td class="n"><input type="checkbox" id="c-pwm"></td><td>Fan blue (PWM)</td><td><span class="mono">GPIO26</span></td><td><span class="wire"><i style="background:#2a62c9"></i>blue</span></td><td class="note">25 kHz PWM, direct wire.</td></tr>
+            <tr><td class="n"><input type="checkbox" id="c-tachpu"></td><td>Fan green (TACH)</td><td>3V3 rail</td><td>10 kΩ resistor</td><td class="note">Pull-up. Must go to 3V3, never to 12 V.</td></tr>
+            <tr><td class="n"><input type="checkbox" id="c-tachr"></td><td>Fan green (TACH)</td><td><span class="mono">GPIO25</span></td><td>10 kΩ resistor in series</td><td class="note">Goes in the wire itself, between the pull-up point and the ESP32.</td></tr>
+            <tr><td class="n"><input type="checkbox" id="c-tachc"></td><td><span class="mono">GPIO25</span> side of that resistor</td><td>GND rail</td><td>10 nF capacitor</td><td class="note">Filters PWM noise off the tach line, otherwise RPM reads double.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <div class="group">
+        <h3>3 · MPU6050 (GY-521)</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th></th><th>MPU pin</th><th>To</th><th>Wire</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td class="n"><input type="checkbox" id="c-mpuvcc"></td><td><span class="mono">VCC</span></td><td>3V3 rail</td><td><span class="wire"><i style="background:var(--v33)"></i>red</span></td><td class="note">Measure about 3.3 V between VCC and GND on the module.</td></tr>
+            <tr><td class="n"><input type="checkbox" id="c-mpugnd"></td><td><span class="mono">GND</span></td><td>GND rail</td><td><span class="wire"><i style="background:#222"></i>black</span></td><td class="note"></td></tr>
+            <tr><td class="n"><input type="checkbox" id="c-mpuscl"></td><td><span class="mono">SCL</span></td><td><span class="mono">GPIO22</span></td><td>any colour</td><td class="note">Swapping SCL and SDA is the most common mistake.</td></tr>
+            <tr><td class="n"><input type="checkbox" id="c-mpusda"></td><td><span class="mono">SDA</span></td><td><span class="mono">GPIO21</span></td><td>any colour</td><td class="note"></td></tr>
+            <tr><td class="n"><input type="checkbox" id="c-mpuad0"></td><td><span class="mono">AD0</span></td><td>GND rail</td><td><span class="wire"><i style="background:#222"></i>black</span></td><td class="note">Sets address 0x68. Leaving it open also works. Tied to 3V3 it becomes 0x69, which the firmware won't find.</td></tr>
+            <tr><td class="n"><input type="checkbox" id="c-mpunc"></td><td><span class="mono">XDA XCL INT</span></td><td>nothing</td><td>—</td><td class="note">Leave unconnected.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <div class="group">
+        <h3>4 · DS18B20 temperature probe</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th></th><th>Probe wire</th><th>To</th><th>Part</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td class="n"><input type="checkbox" id="c-dsvdd"></td><td>Red (VDD)</td><td>3V3 rail</td><td>—</td><td class="note"></td></tr>
+            <tr><td class="n"><input type="checkbox" id="c-dsgnd"></td><td>Black (GND)</td><td>GND rail</td><td>—</td><td class="note"></td></tr>
+            <tr><td class="n"><input type="checkbox" id="c-dsdq"></td><td>Yellow (DQ)</td><td><span class="mono">GPIO4</span></td><td>—</td><td class="note"></td></tr>
+            <tr><td class="n"><input type="checkbox" id="c-dspu"></td><td>Yellow (DQ)</td><td>3V3 rail</td><td>4.7 kΩ resistor</td><td class="note">Required. Without it the sensor reads null or −127 °C.</td></tr>
+          </tbody>
+        </table></div>
+        <p class="note" style="color:var(--muted);font-size:0.9rem">Bare TO-92 sensor instead of a probe: hold it flat face toward you, legs down. Left leg is GND, middle is DQ, right is VDD.</p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-check">
+    <h2 id="h-check">Before and after power-on</h2>
+    <div class="two">
+      <div>
+        <h3>Before plugging in</h3>
+        <ul class="checks">
+          <li>Header pins are <b>soldered</b> to the MPU6050 board, not just pushed through.</li>
+          <li>Multimeter in beep mode across the 3V3 and GND rails: it must <b>not</b> beep.</li>
+          <li>The 12 V plus wire reaches the fan's yellow wire and nothing else.</li>
+          <li>On breadboards with split power rails, both halves are bridged.</li>
+          <li>Plug in USB first, then switch on the 12 V supply.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Serial Monitor at 115200 should show</h3>
+<pre><span class="dim"># preset 0 (OFF) -&gt; duty 0%</span>
+<span class="dim"># INA219 not found - power columns will be nan (continuing)</span>   <span class="dim">← fine while it's removed</span>
+<span class="ok"># Calibrating - keep everything still...</span>
+<span class="ok"># Bias ax=… ay=… az=…</span>
+<span class="ok"># Ready. Presets: p 0=OFF p 1=LOW …</span>
+<span class="ok"># MQTT connected</span></pre>
+        <p class="callout">If you see <code># MPU not found</code>, the firmware stops there and never starts Wi-Fi. Upload <code>firmware/i2c_check</code> and its verdict will tell you which wire is wrong.</p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-ina">
+    <h2 id="h-ina">Adding the INA219 back later</h2>
+    <p>The INA219 shares the I²C bus with the MPU6050 and sits in the fan's 12 V wire to measure its current.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>INA219 pin</th><th>To</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td><span class="mono">VCC</span> / <span class="mono">GND</span></td><td>3V3 rail / GND rail</td><td class="note">Logic power for the chip.</td></tr>
+        <tr><td><span class="mono">SCL</span> / <span class="mono">SDA</span></td><td><span class="mono">GPIO22</span> / <span class="mono">GPIO21</span></td><td class="note">Same lines as the MPU6050. Give it its own wires to the ESP32 pins so that removing it can't disconnect the MPU.</td></tr>
+        <tr><td><span class="mono">VIN+</span></td><td>12 V supply +</td><td class="note">Replaces the direct supply-to-fan wire.</td></tr>
+        <tr><td><span class="mono">VIN−</span></td><td>Fan yellow (+12V)</td><td class="note">All fan current flows through the INA219 shunt, so solder or screw these two. Loose jumpers here caused the earlier problems.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <p class="foot">Pin map: GPIO26 fan PWM · GPIO25 fan tach · GPIO21 SDA · GPIO22 SCL · GPIO4 DS18B20. MPU6050 at 0x68, INA219 at 0x40. From <span class="mono">firmware/fan_rpm/config.h</span> and the project README.</p>
+</div>
+
+<script>
+(function () {
+  var KEY = "fanTwinWiringTicks";
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('#build input[type="checkbox"]'));
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { saved = {}; }
+  function refresh() {
+    var n = 0;
+    boxes.forEach(function (b) { b.closest("tr").classList.toggle("done", b.checked); if (b.checked) n++; });
+    document.getElementById("count").textContent = n;
+  }
+  function save() {
+    var s = {};
+    boxes.forEach(function (b) { if (b.checked) s[b.id] = 1; });
+    try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {}
+  }
+  boxes.forEach(function (b) {
+    if (saved[b.id]) b.checked = true;
+    b.addEventListener("change", function () { save(); refresh(); });
+  });
+  document.getElementById("total").textContent = boxes.length;
+  document.getElementById("reset").addEventListener("click", function () {
+    boxes.forEach(function (b) { b.checked = false; });
+    save(); refresh();
+  });
+  refresh();
+})();
+</script>

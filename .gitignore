@@ -11,7 +11,10 @@ broker/data/
 __pycache__/
 *.pyc
 .venv/
+service/.venv/
 service/data/
+service/logs/
+service/thermal_profile.json
 *.db
 
 # Editor / OS
