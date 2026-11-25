@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FAN01 Digital Twin Dashboard</title>
+  <link rel="stylesheet" href="./css/dashboard.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three/build/three.module.min.js",
+      "three/addons/": "./vendor/three/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="topbar-main">
+        <div class="brand">
+          <span class="brand-dot" aria-hidden="true"></span>
+          <h1 class="brand-title">FAN01 DIGITAL TWIN</h1>
+        </div>
+
+        <div class="status-pills" aria-label="System connection status">
+          <span class="status-pill" id="pillBroker" data-tone="crit">
+            <span id="pillBrokerText">BROKER: DISCONNECTED</span>
+          </span>
+          <span class="status-pill" id="pillEsp" data-tone="neutral">
+            <span id="pillEspText">ESP32: UNKNOWN</span>
+          </span>
+          <span class="status-pill" id="pillTelemetry" data-tone="neutral">
+            <span id="pillTelemetryText">TELEMETRY: OFFLINE</span>
+          </span>
+          <span class="status-pill" id="pillTwin" data-tone="neutral">
+            <span id="pillTwinText">TWIN: OFFLINE</span>
+          </span>
+
+          <button
+            type="button"
+            class="btn-drawer-toggle"
+            id="btnBrokerToggle"
+            aria-expanded="false"
+            aria-controls="brokerDrawer"
+          >
+            Broker Connect
+          </button>
+        </div>
+      </div>
+
+      <div class="broker-drawer" id="brokerDrawer" hidden>
+        <form class="broker-form" id="brokerForm">
+          <label class="field">
+            <span>Host</span>
+            <input id="inpHost" type="text" value="localhost" autocomplete="off">
+          </label>
+          <label class="field field-port">
+            <span>Port</span>
+            <input id="inpPort" type="number" value="9001" min="1" max="65535">
+          </label>
+          <label class="field field-user">
+            <span>User</span>
+            <input id="inpUser" type="text" value="web" autocomplete="username">
+          </label>
+          <label class="field">
+            <span>Password</span>
+            <input id="inpPass" type="password" placeholder="optional" autocomplete="current-password">
+          </label>
+          <div class="broker-actions">
+            <button type="submit" class="btn-primary" id="btnConnect">Connect</button>
+            <button type="button" class="btn-ghost" id="btnDisconnect" disabled>Disconnect</button>
+          </div>
+          <span class="broker-note" id="brokerNote">Not connected</span>
+        </form>
+      </div>
+    </header>
+
+    <!-- 12-Column True-Black Bento Grid -->
+    <main class="bento-grid is-global-offline" id="bentoGrid">
+      <!-- 1. 3D Viewport Card -->
+      <section class="card span-viewport" aria-label="3D Digital Twin Viewport">
+        <div class="card-head">
+          <span class="card-label">3D Assembly Viewport</span>
+          <div class="cam-presets" role="group" aria-label="Camera presets">
+            <button type="button" class="btn-cam is-active" data-cam-preset="iso" aria-pressed="true">Iso</button>
+            <button type="button" class="btn-cam" data-cam-preset="front" aria-pressed="false">Front</button>
+            <button type="button" class="btn-cam" data-cam-preset="top" aria-pressed="false">Top</button>
+            <button type="button" class="btn-cam" data-cam-preset="sensors" aria-pressed="false">Sensors</button>
+          </div>
+        </div>
+        <div class="scene3d-mount" id="scene3d-mount">
+          <div class="scene-placeholder-icon" aria-hidden="true">3D</div>
+          <p class="scene-placeholder-title">Arctic P12 Cooling Unit Twin</p>
+          <p class="scene-placeholder-status" id="sceneStatusText">Phase 2 3D Canvas Ready · Camera: ISO</p>
+        </div>
+      </section>
+
+      <!-- 2. RPM Card (Acid Lime) -->
+      <section class="card card-lime sensor-card span-rpm is-disconnected" id="cardRpm">
+        <div class="card-head">
+          <span class="card-label">Fan Tachometer</span>
+          <span class="badge" id="badgeRpmState" data-tone="off">DISCONNECTED</span>
+        </div>
+        <div class="metric-hero">
+          <span class="metric-value" id="valRpm">—</span>
+          <span class="metric-unit">RPM</span>
+        </div>
+        <div class="metric-subrow">
+          <div class="sub-pair">
+            <span class="sub-key">Twin Expected</span>
+            <span class="sub-val" id="valSimRpm">—</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Enclosure Temp Card (Tangerine) -->
+      <section class="card card-tangerine sensor-card span-temp is-disconnected" id="cardTemp">
+        <div class="card-head">
+          <span class="card-label">Enclosure Temp (DS18B20)</span>
+          <span class="badge" id="badgeTempState" data-tone="off">DISCONNECTED</span>
+        </div>
+        <div class="metric-hero">
+          <span class="metric-value" id="valDsTemp">—</span>
+          <span class="metric-unit">°C</span>
+        </div>
+        <div class="metric-subrow">
+          <div class="sub-pair">
+            <span class="sub-key">MPU Chip</span>
+            <span class="sub-val" id="valMpuTemp">—</span>
+          </div>
+          <span class="demo-sim-badge" id="badgeSimTemp" hidden>
+            DEMO / SIM TEMP · <span id="valSimTempCtrl">—</span>
+          </span>
+        </div>
+      </section>
+
+      <!-- 4. Fan Load & Control Card (Butter Yellow) -->
+      <section class="card card-butter sensor-card span-control" id="cardControl">
+        <div class="card-head">
+          <span class="card-label">Fan Load &amp; Control</span>
+          <span class="badge">PWM 25 kHz</span>
+        </div>
+        <div class="gauge-wrap">
+          <canvas class="gauge-canvas" id="gaugeDuty" aria-label="Fan PWM duty cycle gauge"></canvas>
+        </div>
+        <div class="preset-row" role="group" aria-label="Fan speed presets">
+          <button type="button" class="btn-preset" data-preset="0" aria-pressed="false" disabled>OFF</button>
+          <button type="button" class="btn-preset" data-preset="1" aria-pressed="false" disabled>LOW</button>
+          <button type="button" class="btn-preset" data-preset="2" aria-pressed="false" disabled>MED</button>
+          <button type="button" class="btn-preset" data-preset="3" aria-pressed="false" disabled>HIGH</button>
+          <button type="button" class="btn-preset" data-preset="4" aria-pressed="false" disabled>MAX</button>
+        </div>
+        <div class="auto-banner" id="autoModeBanner" role="status" hidden>
+          ⚠ AUTO MODE — Twin overrides manual clicks
+        </div>
+      </section>
+
+      <!-- 5. Vibration Card (Matte Charcoal + Lime accent) -->
+      <section class="card card-vib sensor-card span-vib is-disconnected" id="cardVib">
+        <div class="card-head">
+          <span class="card-label">Vibration X (MPU6050)</span>
+          <span class="badge" id="badgeVibState" data-tone="off">DISCONNECTED</span>
+        </div>
+        <div class="metric-hero">
+          <span class="metric-value" id="valAxStd">—</span>
+          <span class="metric-unit">m/s²</span>
+        </div>
+        <div class="metric-subrow">
+          <div class="sub-pair">
+            <span class="sub-key">Active Limit</span>
+            <span class="sub-val" id="valVibLimit">—</span>
+          </div>
+          <div class="sub-pair">
+            <span class="sub-key">Expected</span>
+            <span class="sub-val" id="valSimAxStd">—</span>
+          </div>
+          <div class="sub-pair">
+            <span class="sub-key">Samples</span>
+            <span class="sub-val" id="valVibSamples">—</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Power / INA219 Card -->
+      <section class="card sensor-card span-power is-disconnected" id="cardPower">
+        <div class="card-head">
+          <span class="card-label">Power (INA219)</span>
+          <span class="badge" id="badgePowerState" data-tone="off">DISCONNECTED</span>
+        </div>
+        <div class="kv-grid">
+          <div class="kv-cell">
+            <span class="kv-k">Current</span>
+            <span class="kv-v" id="valCurrentMa">—</span>
+          </div>
+          <div class="kv-cell">
+            <span class="kv-k">Bus V</span>
+            <span class="kv-v" id="valBusV">—</span>
+          </div>
+          <div class="kv-cell">
+            <span class="kv-k">Power</span>
+            <span class="kv-v" id="valPowerMw">—</span>
+          </div>
+        </div>
+        <div class="est-banner" id="rowEstCurrent">
+          <span class="sub-key">Twin Sim Current</span>
+          <span class="sub-val" id="valEstCurrentMa">—</span>
+          <span class="est-tag">Est. / Unverified</span>
+        </div>
+      </section>
+
+      <!-- 7. Always-Visible Mini Charts Row -->
+      <section class="card card-chart span-chart" aria-label="RPM 2 minute chart">
+        <div class="card-head">
+          <span class="card-label">RPM (2m)</span>
+          <span class="badge">Solid: Live · Dashed: Twin</span>
+        </div>
+        <div class="chart-wrap" id="chartRpmWrap">
+          <canvas aria-label="Fan RPM over last 2 minutes"></canvas>
+          <div class="chart-tip" hidden></div>
+        </div>
+      </section>
+
+      <section class="card card-chart span-chart" aria-label="Vibration 2 minute chart">
+        <div class="card-head">
+          <span class="card-label">Vibration (2m)</span>
+          <span class="badge">Dashed: Alert Limit</span>
+        </div>
+        <div class="chart-wrap" id="chartVibWrap">
+          <canvas aria-label="Vibration X standard deviation over last 2 minutes"></canvas>
+          <div class="chart-tip" hidden></div>
+        </div>
+      </section>
+
+      <section class="card card-chart span-chart" aria-label="Temperature 2 minute chart">
+        <div class="card-head">
+          <span class="card-label">Temp (2m)</span>
+          <span class="badge">DS18B20 °C</span>
+        </div>
+        <div class="chart-wrap" id="chartTempWrap">
+          <canvas aria-label="Enclosure temperature over last 2 minutes"></canvas>
+          <div class="chart-tip" hidden></div>
+        </div>
+      </section>
+
+      <!-- 8. Twin Engine Card -->
+      <section class="card card-twin span-twin is-twin-offline" id="cardTwin">
+        <div class="card-head">
+          <span class="card-label">Twin Engine</span>
+          <span class="badge" id="badgeTwinState" data-tone="off">TWIN OFFLINE</span>
+        </div>
+        <div class="kv-grid kv-grid-2">
+          <div class="kv-cell">
+            <span class="kv-k">ctrl_mode</span>
+            <span class="kv-v" id="valCtrlMode">—</span>
+          </div>
+          <div class="kv-cell">
+            <span class="kv-k">ctrl_action</span>
+            <span class="kv-v" id="valCtrlAction">—</span>
+          </div>
+          <div class="kv-cell">
+            <span class="kv-k">ctrl_target</span>
+            <span class="kv-v" id="valCtrlTarget">—</span>
+          </div>
+          <div class="kv-cell">
+            <span class="kv-k">sim_current_mA (Estimated)</span>
+            <span class="kv-v" id="valTwinEstCurrent">—</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 9. Alerts Feed Card -->
+      <section class="card span-alerts" aria-label="Twin Anomaly Alerts Feed">
+        <div class="card-head">
+          <span class="card-label">Alerts Feed</span>
+          <span class="badge" id="alertsCount">0</span>
+        </div>
+        <ul class="alerts-list" id="alertsList" aria-live="polite">
+          <li class="alert-empty">No alerts received.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+
+  <script src="./vendor/mqtt.min.js"></script>
+  <script type="module">
+    import { initUI } from "./js/ui.js";
+    initUI();
+  </script>
+</body>
+</html>
