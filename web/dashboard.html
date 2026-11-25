@@ -20,22 +20,25 @@
     <header class="topbar">
       <div class="topbar-main">
         <div class="brand">
-          <span class="brand-dot" aria-hidden="true"></span>
           <h1 class="brand-title">FAN01 DIGITAL TWIN</h1>
         </div>
 
         <div class="status-pills" aria-label="System connection status">
           <span class="status-pill" id="pillBroker" data-tone="crit">
-            <span id="pillBrokerText">BROKER: DISCONNECTED</span>
+            <span class="pill-key">BROKER:</span>
+            <span class="pill-val" id="pillBrokerText">DISCONNECTED</span>
           </span>
           <span class="status-pill" id="pillEsp" data-tone="neutral">
-            <span id="pillEspText">ESP32: UNKNOWN</span>
+            <span class="pill-key">ESP32:</span>
+            <span class="pill-val" id="pillEspText">UNKNOWN</span>
           </span>
-          <span class="status-pill" id="pillTelemetry" data-tone="neutral">
-            <span id="pillTelemetryText">TELEMETRY: OFFLINE</span>
+          <span class="status-pill" id="pillTelemetry" data-tone="crit">
+            <span class="pill-key">TELEMETRY:</span>
+            <span class="pill-val" id="pillTelemetryText">OFFLINE</span>
           </span>
           <span class="status-pill" id="pillTwin" data-tone="neutral">
-            <span id="pillTwinText">TWIN: OFFLINE</span>
+            <span class="pill-key">TWIN:</span>
+            <span class="pill-val" id="pillTwinText">OFFLINE</span>
           </span>
 
           <button

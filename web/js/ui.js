@@ -415,10 +415,10 @@ export function initUI() {
 
 function updateBrokerPill(els, broker) {
   const map = {
-    connected: { text: "BROKER: CONNECTED", tone: "good" },
-    connecting: { text: "BROKER: CONNECTING", tone: "warn" },
-    error: { text: "BROKER: ERROR", tone: "crit" },
-    disconnected: { text: "BROKER: DISCONNECTED", tone: "crit" },
+    connected: { text: "CONNECTED", tone: "good" },
+    connecting: { text: "CONNECTING", tone: "warn" },
+    error: { text: "ERROR", tone: "crit" },
+    disconnected: { text: "DISCONNECTED", tone: "crit" },
   };
   const info = map[broker.status] || map.disconnected;
   els.pillBroker.dataset.tone = info.tone;
@@ -428,41 +428,41 @@ function updateBrokerPill(els, broker) {
 function updateEspPill(els, brokerStatus, esp) {
   if (brokerStatus !== "connected") {
     els.pillEsp.dataset.tone = "neutral";
-    els.pillEspText.textContent = "ESP32: UNKNOWN";
+    els.pillEspText.textContent = "UNKNOWN";
     return;
   }
   if (esp.online === true) {
     els.pillEsp.dataset.tone = "good";
-    els.pillEspText.textContent = "ESP32: ONLINE";
+    els.pillEspText.textContent = "ONLINE";
   } else if (esp.online === false) {
     els.pillEsp.dataset.tone = "crit";
-    els.pillEspText.textContent = "ESP32: OFFLINE";
+    els.pillEspText.textContent = "OFFLINE";
   } else {
-    els.pillEsp.dataset.tone = "warn";
-    els.pillEspText.textContent = "ESP32: UNKNOWN";
+    els.pillEsp.dataset.tone = "neutral";
+    els.pillEspText.textContent = "UNKNOWN";
   }
 }
 
 function updateTelemetryPill(els, brokerStatus, telemetry, health) {
   if (brokerStatus !== "connected") {
-    els.pillTelemetry.dataset.tone = "neutral";
-    els.pillTelemetryText.textContent = "TELEMETRY: OFFLINE";
+    els.pillTelemetry.dataset.tone = "crit";
+    els.pillTelemetryText.textContent = "OFFLINE";
   } else if (telemetry.lastRxMs === null) {
     els.pillTelemetry.dataset.tone = "warn";
-    els.pillTelemetryText.textContent = "TELEMETRY: WAITING";
+    els.pillTelemetryText.textContent = "WAITING";
   } else if (health.telemetryStale) {
     els.pillTelemetry.dataset.tone = "crit";
-    els.pillTelemetryText.textContent = "TELEMETRY: STALE >3s";
+    els.pillTelemetryText.textContent = "STALE >3s";
   } else {
     els.pillTelemetry.dataset.tone = "good";
-    els.pillTelemetryText.textContent = "TELEMETRY: LIVE";
+    els.pillTelemetryText.textContent = "LIVE";
   }
 }
 
 function updateTwinPill(els, sim) {
   if (!sim.online || !sim.data) {
     els.pillTwin.dataset.tone = "neutral";
-    els.pillTwinText.textContent = "TWIN: OFFLINE";
+    els.pillTwinText.textContent = "OFFLINE";
     return;
   }
   const mode =
@@ -470,7 +470,7 @@ function updateTwinPill(els, sim) {
       ? sim.data.ctrl_mode.toUpperCase()
       : "ACTIVE";
   els.pillTwin.dataset.tone = mode === "AUTO" ? "warn" : "good";
-  els.pillTwinText.textContent = `TWIN: ${mode}`;
+  els.pillTwinText.textContent = mode;
 }
 
 function renderAlerts(listEl, countEl, alerts) {

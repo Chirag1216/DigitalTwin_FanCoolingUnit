@@ -81,15 +81,6 @@ body {
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-.brand-dot {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: var(--accent-lime);
-  flex-shrink: 0;
 }
 
 .brand-title {
@@ -110,37 +101,40 @@ body {
 .status-pill {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   padding: 5px 12px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-subtle);
+  background: #161618;
+  border: 1px solid #2a2a2e;
   font-family: var(--font-mono);
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.04em;
-  color: var(--ink-light);
   white-space: nowrap;
 }
 
-.status-pill::before {
-  content: "";
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--ink-muted);
+.pill-key {
+  color: #8e8e93;
 }
 
-.status-pill[data-tone="good"]::before {
-  background: var(--tone-good);
+.pill-val {
+  color: #8e8e93;
 }
 
-.status-pill[data-tone="warn"]::before {
-  background: var(--tone-warn);
+.status-pill[data-tone="good"] .pill-val {
+  color: #c8f560;
 }
 
-.status-pill[data-tone="crit"]::before {
-  background: var(--tone-crit);
+.status-pill[data-tone="warn"] .pill-val {
+  color: #f9ed99;
+}
+
+.status-pill[data-tone="crit"] .pill-val {
+  color: #ff5a5f;
+}
+
+.status-pill[data-tone="neutral"] .pill-val {
+  color: #8e8e93;
 }
 
 .btn-drawer-toggle {
