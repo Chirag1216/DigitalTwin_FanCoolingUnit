@@ -233,7 +233,7 @@ export class SparklineChart {
     if (validPrimary.length) {
       this._drawSeries(ctx, pts, primaryKey, xOf, yOf, {
         color: strokeColor,
-        width: 2.2,
+        width: 2.5,
         dash: [],
         gapMs: 2500,
       });

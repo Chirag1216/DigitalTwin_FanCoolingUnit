@@ -83,18 +83,20 @@
       <section class="card span-viewport" aria-label="3D Digital Twin Viewport">
         <div class="card-head">
           <span class="card-label">3D Assembly Viewport</span>
-          <div class="cam-presets" role="group" aria-label="Camera presets">
-            <button type="button" class="btn-cam is-active" data-cam-preset="iso" aria-pressed="true">Iso</button>
-            <button type="button" class="btn-cam" data-cam-preset="front" aria-pressed="false">Front</button>
-            <button type="button" class="btn-cam" data-cam-preset="top" aria-pressed="false">Top</button>
-            <button type="button" class="btn-cam" data-cam-preset="sensors" aria-pressed="false">Sensors</button>
+          <div class="viewport-tools">
+            <div class="cam-presets" role="group" aria-label="Camera presets">
+              <button type="button" class="btn-cam is-active" data-cam-preset="iso" aria-pressed="true">Iso</button>
+              <button type="button" class="btn-cam" data-cam-preset="front" aria-pressed="false">Front</button>
+              <button type="button" class="btn-cam" data-cam-preset="top" aria-pressed="false">Top</button>
+              <button type="button" class="btn-cam" data-cam-preset="sensors" aria-pressed="false">Sensors</button>
+            </div>
+            <div class="cam-toggles" role="group" aria-label="Viewport overlays">
+              <button type="button" class="btn-cam" id="btnHideBox" aria-pressed="false">Hide Box</button>
+              <button type="button" class="btn-cam" id="btnLabels" aria-pressed="false">Labels</button>
+            </div>
           </div>
         </div>
-        <div class="scene3d-mount" id="scene3d-mount">
-          <div class="scene-placeholder-icon" aria-hidden="true">3D</div>
-          <p class="scene-placeholder-title">Arctic P12 Cooling Unit Twin</p>
-          <p class="scene-placeholder-status" id="sceneStatusText">Phase 2 3D Canvas Ready · Camera: ISO</p>
-        </div>
+        <div class="scene3d-mount" id="scene3d-mount"></div>
       </section>
 
       <!-- 2. RPM Card (Acid Lime) -->

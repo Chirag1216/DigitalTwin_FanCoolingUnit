@@ -14,6 +14,7 @@ import {
 } from "./state.js";
 import { mqttClient } from "./mqtt-client.js";
 import { SegmentedArcGauge, SparklineChart } from "./charts.js";
+import { Scene3DTwin } from "./scene3d.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -49,10 +50,11 @@ export function initUI() {
     btnDisconnect: $("btnDisconnect"),
     brokerNote: $("brokerNote"),
 
-    // 3D Viewport placeholder
+    // 3D Viewport
     sceneMount: $("scene3d-mount"),
-    sceneStatusText: $("sceneStatusText"),
     cameraButtons: Array.from(document.querySelectorAll("[data-cam-preset]")),
+    btnHideBox: $("btnHideBox"),
+    btnLabels: $("btnLabels"),
 
     // RPM Card
     cardRpm: $("cardRpm"),
@@ -104,7 +106,8 @@ export function initUI() {
     alertsCount: $("alertsCount"),
   };
 
-  // Instantiate Canvas 2D charts
+  // Instantiate 3D Digital Twin & Canvas 2D charts
+  const scene3d = new Scene3DTwin(els.sceneMount);
   const dutyGauge = new SegmentedArcGauge(els.gaugeCanvas);
 
   const chartRpm = new SparklineChart($("chartRpmWrap"), {
@@ -164,11 +167,29 @@ export function initUI() {
     mqttClient.disconnect();
   });
 
-  // Wire camera preset buttons (ready for Phase 2)
+  // Wire camera preset & overlay toggle buttons
   els.cameraButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
-      store.setCameraPreset(btn.dataset.camPreset);
+      const preset = btn.dataset.camPreset;
+      store.setCameraPreset(preset);
+      scene3d.setCameraPreset(preset);
     });
+  });
+
+  let hideBox = false;
+  els.btnHideBox.addEventListener("click", () => {
+    hideBox = !hideBox;
+    els.btnHideBox.classList.toggle("is-active", hideBox);
+    els.btnHideBox.setAttribute("aria-pressed", String(hideBox));
+    scene3d.setHideBox(hideBox);
+  });
+
+  let showLabels = false;
+  els.btnLabels.addEventListener("click", () => {
+    showLabels = !showLabels;
+    els.btnLabels.classList.toggle("is-active", showLabels);
+    els.btnLabels.setAttribute("aria-pressed", String(showLabels));
+    scene3d.setShowLabels(showLabels);
   });
 
   // Wire Fan Preset buttons — highlights strictly follow telemetry.preset, not clicked button
@@ -210,18 +231,13 @@ export function initUI() {
     els.btnDisconnect.disabled = s.broker.status === "disconnected";
     els.brokerNote.textContent = s.broker.message;
 
-    // 3. 3D Viewport camera preset & placeholder telemetry hint
+    // 3. 3D Viewport camera preset & live twin sync
     els.cameraButtons.forEach((btn) => {
       const active = btn.dataset.camPreset === s.ui.cameraPreset;
       btn.classList.toggle("is-active", active);
       btn.setAttribute("aria-pressed", String(active));
     });
-    if (!h.globalOffline && t && isNum(t.rpm)) {
-      const name = PRESET_NAMES[t.preset] ?? "—";
-      els.sceneStatusText.textContent = `Phase 2 3D Canvas Ready · Camera: ${s.ui.cameraPreset.toUpperCase()} · Live Sync: ${fmt(t.rpm, 0)} RPM (${name})`;
-    } else {
-      els.sceneStatusText.textContent = `Phase 2 3D Canvas Ready · Camera: ${s.ui.cameraPreset.toUpperCase()} · Waiting for live telemetry`;
-    }
+    scene3d.updateState(s);
 
     // 4. RPM Card
     els.cardRpm.classList.toggle("is-disconnected", h.rpmDisconnected);

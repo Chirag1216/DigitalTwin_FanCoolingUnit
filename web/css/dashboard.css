@@ -4,8 +4,8 @@
   --bg-canvas: #000000;
   --surface-charcoal: #161618;
   --surface-elevated: #1e1e22;
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.16);
+  --border-subtle: #262629;
+  --border-strong: #38383d;
 
   --accent-lime: #c8f560;
   --accent-tangerine: #f47b42;
@@ -13,8 +13,8 @@
 
   --ink-light: #f5f5f7;
   --ink-muted: #9a9aa3;
-  --ink-dark: #0a0a0c;
-  --ink-dark-muted: rgba(10, 10, 12, 0.68);
+  --ink-dark: #0d0d0f;
+  --ink-dark-muted: rgba(13, 13, 15, 0.72);
 
   --tone-good: #4ade80;
   --tone-warn: #fbbf24;
@@ -89,7 +89,6 @@ body {
   height: 11px;
   border-radius: 50%;
   background: var(--accent-lime);
-  box-shadow: 0 0 12px rgba(200, 245, 96, 0.55);
   flex-shrink: 0;
 }
 
@@ -134,17 +133,14 @@ body {
 
 .status-pill[data-tone="good"]::before {
   background: var(--tone-good);
-  box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
 }
 
 .status-pill[data-tone="warn"]::before {
   background: var(--tone-warn);
-  box-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
 }
 
 .status-pill[data-tone="crit"]::before {
   background: var(--tone-crit);
-  box-shadow: 0 0 8px rgba(248, 113, 113, 0.55);
 }
 
 .btn-drawer-toggle {
@@ -308,10 +304,6 @@ input:focus-visible {
   background: var(--accent-butter);
   color: var(--ink-dark);
   border-color: transparent;
-}
-
-.card-vib {
-  border-color: rgba(200, 245, 96, 0.22);
 }
 
 /* Grid Placement */
@@ -505,11 +497,24 @@ input:focus-visible {
   letter-spacing: 0.03em;
 }
 
-/* ---------- 3D Viewport Placeholder ---------- */
-.cam-presets {
+/* ---------- 3D Viewport ---------- */
+.viewport-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.cam-presets,
+.cam-toggles {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.cam-toggles {
+  padding-left: 8px;
+  border-left: 1px solid var(--border-subtle);
 }
 
 .btn-cam {
@@ -540,48 +545,158 @@ input:focus-visible {
 .scene3d-mount {
   position: relative;
   flex: 1;
-  min-height: 290px;
+  min-height: 310px;
   border-radius: 16px;
-  border: 1px dashed rgba(255, 255, 255, 0.12);
-  background:
-    radial-gradient(circle at 50% 45%, rgba(200, 245, 96, 0.07), transparent 62%),
-    #0d0d0f;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 20px;
-  text-align: center;
+  border: 1px solid var(--border-subtle);
+  background: #111113;
+  overflow: hidden;
+  user-select: none;
+}
+
+.scene3d-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.scene3d-status {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-charcoal);
+  border: 1px solid var(--border-strong);
+  color: var(--ink-light);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.scene3d-status.is-error {
+  color: var(--tone-crit);
+  border-color: var(--tone-crit);
+}
+
+.scene3d-labels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
   overflow: hidden;
 }
 
-.scene-placeholder-icon {
-  width: 54px;
-  height: 54px;
+.scene3d-label-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: auto;
+  appearance: none;
+  background: #161618;
+  color: var(--ink-light);
+  border: 1px solid #323236;
+  border-radius: var(--radius-pill);
+  padding: 3px 9px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.scene3d-label-pill:hover {
+  border-color: var(--accent-lime);
+  color: var(--accent-lime);
+}
+
+.scene3d-label-pill.is-disconnected {
+  color: var(--ink-muted);
+  border-color: #262629;
+  opacity: 0.65;
+}
+
+.scene3d-inspector {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  width: min(290px, calc(100% - 24px));
+  background: #161618;
+  border: 1px solid #323236;
   border-radius: 16px;
-  background: rgba(200, 245, 96, 0.1);
-  border: 1px solid rgba(200, 245, 96, 0.25);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 4;
+}
+
+.inspector-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.inspector-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent-lime);
+}
+
+.inspector-close {
+  appearance: none;
+  background: transparent;
+  color: var(--ink-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  width: 24px;
+  height: 24px;
+  line-height: 1;
+  font-size: 1rem;
+  cursor: pointer;
   display: grid;
   place-items: center;
-  color: var(--accent-lime);
-  font-family: var(--font-mono);
-  font-weight: 800;
-  font-size: 0.9rem;
 }
 
-.scene-placeholder-title {
+.inspector-close:hover {
+  color: var(--ink-light);
+  border-color: var(--border-strong);
+}
+
+.inspector-rows {
   margin: 0;
-  font-size: 0.96rem;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.inspector-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 0.74rem;
+}
+
+.inspector-row dt {
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+
+.inspector-row dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-weight: 700;
   color: var(--ink-light);
-}
-
-.scene-placeholder-status {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: var(--ink-muted);
+  text-align: right;
 }
 
 /* ---------- Power & Twin KV Grids ---------- */
