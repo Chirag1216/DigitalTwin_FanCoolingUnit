@@ -113,8 +113,13 @@ export function initUI() {
   const chartRpm = new SparklineChart($("chartRpmWrap"), {
     primaryKey: "rpm",
     secondaryKey: "simRpm",
-    primaryColor: "#C8F560",
-    secondaryColor: "rgba(255, 255, 255, 0.58)",
+    primaryColor: "#0D0D0F",
+    secondaryColor: "rgba(13, 13, 15, 0.45)",
+    gridColor: "rgba(13, 13, 15, 0.14)",
+    labelColor: "rgba(13, 13, 15, 0.65)",
+    footerColor: "rgba(13, 13, 15, 0.55)",
+    dotStrokeColor: "#C8F560",
+    crosshairColor: "rgba(13, 13, 15, 0.42)",
     decimals: 0,
     unit: "RPM",
     getRange: (pri, sec) => [0, Math.max(3000, ...pri, ...sec)],
@@ -133,7 +138,12 @@ export function initUI() {
 
   const chartTemp = new SparklineChart($("chartTempWrap"), {
     primaryKey: "dsTemp",
-    primaryColor: "#F47B42",
+    primaryColor: "#0D0D0F",
+    gridColor: "rgba(13, 13, 15, 0.14)",
+    labelColor: "rgba(13, 13, 15, 0.65)",
+    footerColor: "rgba(13, 13, 15, 0.55)",
+    dotStrokeColor: "#F47B42",
+    crosshairColor: "rgba(13, 13, 15, 0.42)",
     decimals: 1,
     unit: "°C",
     getRange: (pri) => {

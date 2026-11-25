@@ -84,3 +84,13 @@ Fan presets (validated operating points): `OFF 0% · LOW 30% · MEDIUM 50% · HI
    Each run writes `service/logs/session_<time>.csv` (telemetry + model + controller decisions;
    `ds_temp_C` is always the real sensor, `ctrl_temp_C` what the controller used) and a matching `.log`.
    Twin publishes `fantwin/fan01/sim` (model + controller state) and `fantwin/fan01/alert` (anomalies).
+
+## Run the 3D Dashboard
+
+Browsers cannot load `.glb` models over `file://`, so serve the repository root over HTTP:
+
+```bash
+python3 -m http.server 8000
+```
+
+Open `http://localhost:8000/web/dashboard.html`, open **Broker Connect**, and connect to `ws://<broker-pc>:9001` (`localhost` when running on the broker PC) with user `web` and the password created by `broker/setup_users.sh`. All required libraries (`mqtt@5.3.4` and `three@0.170.0`) are bundled locally under `web/vendor/` so the dashboard works offline during hotspot or air-gapped demos.

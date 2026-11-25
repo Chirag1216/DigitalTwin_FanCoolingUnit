@@ -110,7 +110,14 @@ export class SparklineChart {
     this._points = [];
     this._hoverX = null;
 
-    this._ro = new ResizeObserver(() => this.draw());
+    this._roRaf = 0;
+    this._ro = new ResizeObserver(() => {
+      if (this._roRaf) return;
+      this._roRaf = requestAnimationFrame(() => {
+        this._roRaf = 0;
+        this.draw();
+      });
+    });
     this._ro.observe(this.container);
 
     this.canvas.addEventListener("pointermove", (e) => {
@@ -131,13 +138,13 @@ export class SparklineChart {
   }
 
   draw() {
-    const { ctx, w, h } = setupHiDPICanvas(this.canvas, 320, 132);
+    const { ctx, w, h } = setupHiDPICanvas(this.canvas, 280, 92);
     ctx.clearRect(0, 0, w, h);
 
-    const padL = 44;
-    const padR = 10;
-    const padT = 10;
-    const padB = 22;
+    const padL = 40;
+    const padR = 8;
+    const padT = 8;
+    const padB = 18;
     const plotW = Math.max(20, w - padL - padR);
     const plotH = Math.max(20, h - padT - padB);
 
@@ -150,6 +157,11 @@ export class SparklineChart {
       primaryColor = "#C8F560",
       secondaryColor = "rgba(255, 255, 255, 0.55)",
       limitColor = "#F47B42",
+      gridColor = "rgba(255, 255, 255, 0.08)",
+      labelColor = "rgba(255, 255, 255, 0.45)",
+      footerColor = "rgba(255, 255, 255, 0.35)",
+      dotStrokeColor = "#161618",
+      crosshairColor = "rgba(255, 255, 255, 0.35)",
       decimals = 0,
       unit = "",
       getRange,
@@ -179,14 +191,14 @@ export class SparklineChart {
       const y = yOf(val);
       ctx.beginPath();
       ctx.setLineDash([2, 4]);
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+      ctx.strokeStyle = gridColor;
       ctx.lineWidth = 1;
       ctx.moveTo(padL, y);
       ctx.lineTo(w - padR, y);
       ctx.stroke();
 
       ctx.setLineDash([]);
-      ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+      ctx.fillStyle = labelColor;
       ctx.textAlign = "right";
       const label = val.toFixed(decimals);
       const yText = idx === 0 ? Math.min(y, padT + plotH - 4) : idx === 2 ? Math.max(y, padT + 5) : y;
@@ -194,7 +206,7 @@ export class SparklineChart {
     });
 
     // Footer time labels
-    ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+    ctx.fillStyle = footerColor;
     ctx.textBaseline = "bottom";
     ctx.textAlign = "left";
     ctx.fillText("2m ago", padL, h - 2);
@@ -256,7 +268,7 @@ export class SparklineChart {
 
       ctx.beginPath();
       ctx.setLineDash([2, 3]);
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
+      ctx.strokeStyle = crosshairColor;
       ctx.lineWidth = 1;
       ctx.moveTo(px, padT);
       ctx.lineTo(px, padT + plotH);
@@ -268,7 +280,7 @@ export class SparklineChart {
       ctx.fillStyle = strokeColor;
       ctx.fill();
       ctx.lineWidth = 2;
-      ctx.strokeStyle = "#161618";
+      ctx.strokeStyle = dotStrokeColor;
       ctx.stroke();
 
       if (this.tipEl) {
