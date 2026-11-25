@@ -18,7 +18,7 @@ ESP32 (firmware/) ──MQTT 1883──► Mosquitto (broker/) ◄──WebSocke
 | `firmware/fan_rpm/` | ESP32 Arduino sketch: PWM presets, tach RPM, IMU vibration stats, DS18B20, INA219, MQTT link | Phase 1 ✅ |
 | `broker/` | Mosquitto config with auth, topic ACL, WebSockets, persistence + a WebSocket test page | Phase 2 ✅ |
 | `service/` | Python logger, simulated model, closed-loop thermal control, anomaly detection, Rich TUI | Phase 3 ✅ |
-| `web/` | Three.js 3D digital twin dashboard | Phase 4 (planned) |
+| `web/` | Three.js 3D digital twin dashboard | ✅  |
 | `3d-model/` | Blender glTF models of the fan and full assembly (`Fan_Rotor` is a separate mesh) | ✅ |
 
 ## Hardware / pins (ESP32 DevKitC)
